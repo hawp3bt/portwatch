@@ -47,6 +47,26 @@ func TestScan_ClosedPort(t *testing.T) {
 	}
 }
 
+func TestScan_MultiplePortsOpenAndClosed(t *testing.T) {
+	port, cleanup := startTestServer(t)
+	defer cleanup()
+
+	states, err := Scan("127.0.0.1", []int{port, 1}, time.Second)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(states) != 2 {
+		t.Fatalf("expected 2 results, got %d", len(states))
+	}
+	open := OpenPorts(states)
+	if len(open) != 1 {
+		t.Errorf("expected 1 open port, got %d", len(open))
+	}
+	if open[0].Port != port {
+		t.Errorf("expected open port %d, got %d", port, open[0].Port)
+	}
+}
+
 func TestOpenPorts_Filter(t *testing.T) {
 	input := []PortState{
 		{Port: 80, Open: true},
