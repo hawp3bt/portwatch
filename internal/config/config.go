@@ -7,64 +7,50 @@ import (
 	"time"
 )
 
-// Config holds portwatch runtime configuration.
+// Config holds the runtime configuration for portwatch.
 type Config struct {
-	// Ports to monitor; empty means monitor all detected ports.
+	// Interval between successive port scans.
+	Interval time.Duration `json:"-"`
+	// IntervalSeconds is the on-disk representation (seconds).
+	IntervalSeconds int `json:"interval_seconds"`
+	// Ports is the explicit list of ports to watch. Empty means scan all.
 	Ports []int `json:"ports"`
-	// Interval between scans.
-	Interval duration `json:"interval"`
-	// Baseline is the set of ports considered "expected".
-	Baseline []int `json:"baseline"`
+	// StateFile is the path used to persist port snapshots between runs.
+	StateFile string `json:"state_file"`
+	// AlertOutput is the file path for alert output; empty means stdout.
+	AlertOutput string `json:"alert_output,omitempty"`
 }
 
-// duration is a time.Duration that marshals/unmarshals as a string (e.g. "5s").
-type duration struct{ time.Duration }
-
-func (d *duration) UnmarshalJSON(b []byte) error {
-	var s string
-	if err := json.Unmarshal(b, &s); err != nil {
-		return err
+// Default returns a Config with sensible defaults.
+func Default() Config {
+	return Config{
+		IntervalSeconds: 30,
+		Interval:        30 * time.Second,
+		Ports:           []int{},
+		StateFile:       "/tmp/portwatch_state.json",
 	}
-	v, err := time.ParseDuration(s)
+}
+
+// Load reads a JSON config file from path and returns a validated Config.
+func Load(path string) (Config, error) {
+	data, err := os.ReadFile(path)
 	if err != nil {
-		return err
+		return Config{}, err
 	}
-	d.Duration = v
-	return nil
-}
 
-func (d duration) MarshalJSON() ([]byte, error) {
-	return json.Marshal(d.Duration.String())
-}
+	cfg := Default()
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return Config{}, err
+	}
 
-// Load reads a JSON config file from path.
-func Load(path string) (*Config, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
+	if cfg.IntervalSeconds <= 0 {
+		return Config{}, errors.New("interval_seconds must be greater than zero")
 	}
-	defer f.Close()
+	cfg.Interval = time.Duration(cfg.IntervalSeconds) * time.Second
 
-	var cfg Config
-	if err := json.NewDecoder(f).Decode(&cfg); err != nil {
-		return nil, err
+	if cfg.StateFile == "" {
+		cfg.StateFile = Default().StateFile
 	}
-	if err := cfg.validate(); err != nil {
-		return nil, err
-	}
-	return &cfg, nil
-}
 
-// Default returns a sensible default configuration.
-func Default() *Config {
-	return &Config{
-		Interval: duration{30 * time.Second},
-	}
-}
-
-func (c *Config) validate() error {
-	if c.Interval.Duration <= 0 {
-		return errors.New("config: interval must be positive")
-	}
-	return nil
+	return cfg, nil
 }
