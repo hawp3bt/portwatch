@@ -75,3 +75,19 @@ func TestLoad_CorruptFile_ReturnsError(t *testing.T) {
 		t.Error("expected error for corrupt JSON, got nil")
 	}
 }
+
+func TestSave_EmptyPorts_RoundTrip(t *testing.T) {
+	store := state.New(tempPath(t))
+
+	if err := store.Save([]int{}); err != nil {
+		t.Fatalf("Save() error: %v", err)
+	}
+
+	snap, err := store.Load()
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	if len(snap.Ports) != 0 {
+		t.Errorf("expected empty ports after saving empty slice, got %v", snap.Ports)
+	}
+}
