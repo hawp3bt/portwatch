@@ -2,6 +2,7 @@ package state
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"time"
 )
@@ -39,7 +40,7 @@ func (s *Store) Save(ports []int) error {
 // Returns an empty Snapshot (no error) if the file does not exist yet.
 func (s *Store) Load() (Snapshot, error) {
 	data, err := os.ReadFile(s.path)
-	if os.IsNotExist(err) {
+	if errors.Is(err, os.ErrNotExist) {
 		return Snapshot{}, nil
 	}
 	if err != nil {
