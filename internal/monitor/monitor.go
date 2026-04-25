@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/user/portwatch/internal/scanner"
@@ -81,6 +82,8 @@ func diff(prev, curr []int) (added, removed []int) {
 			removed = append(removed, p)
 		}
 	}
+	sort.Ints(added)
+	sort.Ints(removed)
 	return
 }
 
