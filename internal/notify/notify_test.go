@@ -54,6 +54,12 @@ func TestSendWebhook_Non2xxReturnsError(t *testing.T) {
 	}
 }
 
+func TestSendWebhook_InvalidURL(t *testing.T) {
+	if err := sendWebhook("http://127.0.0.1:0", "title", "body"); err == nil {
+		t.Error("expected error when connecting to invalid URL")
+	}
+}
+
 func TestNotifier_Opened_CallsWebhook(t *testing.T) {
 	var received webhookPayload
 
