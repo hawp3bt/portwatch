@@ -32,6 +32,13 @@ func TestIsIgnored_ReturnsFalseForNonIgnoredPort(t *testing.T) {
 	}
 }
 
+func TestIsIgnored_EmptyIgnoreList(t *testing.T) {
+	r := filter.New(nil, 0, 0)
+	if r.IsIgnored(22) {
+		t.Error("expected port 22 not to be ignored when ignore list is empty")
+	}
+}
+
 func TestInRange_NoRangeAllowsAll(t *testing.T) {
 	r := filter.New(nil, 0, 0)
 	for _, p := range []int{1, 1024, 65535} {
@@ -73,5 +80,13 @@ func TestApply_EmptyInputReturnsEmpty(t *testing.T) {
 	got := r.Apply([]int{})
 	if len(got) != 0 {
 		t.Errorf("expected empty slice, got %v", got)
+	}
+}
+
+func TestApply_AllPortsIgnoredReturnsEmpty(t *testing.T) {
+	r := filter.New([]int{22, 80, 443}, 0, 0)
+	got := r.Apply([]int{22, 80, 443})
+	if len(got) != 0 {
+		t.Errorf("expected empty slice when all ports are ignored, got %v", got)
 	}
 }
